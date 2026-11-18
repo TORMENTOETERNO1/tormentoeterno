@@ -1,0 +1,1463 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lista de productos</title>
+<style>
+:root{font-family:Segoe UI,Arial,sans-serif;color:#202124;background:#f4f6f8}
+body{margin:0;padding:24px}
+main{max-width:1200px;margin:auto;background:white;border-radius:14px;padding:22px;box-shadow:0 4px 18px #0001}
+h1{margin:0 0 6px;font-size:25px}
+p{color:#5f6368;margin:5px 0 18px}
+.controls{display:flex;gap:9px;flex-wrap:wrap;margin:12px 0;align-items:center}
+input,select,button{font:inherit;padding:10px 12px;border:1px solid #c8ccd0;border-radius:8px;background:white}
+input[type="text"],input:not([type]){min-width:170px;flex:1}
+button{cursor:pointer}
+button.primary{background:#2463eb;color:white;border-color:#2463eb}
+button.danger{background:#dc2626;color:white;border-color:#dc2626}
+button:hover{filter:brightness(.95)}
+.summary{display:flex;gap:20px;flex-wrap:wrap;align-items:center;justify-content:space-between;background:#eef3ff;padding:12px 14px;border-radius:9px;margin:12px 0}
+.summary-stats{display:flex;gap:20px;flex-wrap:wrap;align-items:center}
+
+/* Pestañas (Tabs) superiores */
+.tabs-container{display:flex;gap:8px;border-bottom:2px solid #e4e7eb;margin-bottom:18px;padding-bottom:0}
+.tab-btn{
+  background:#f1f3f4;
+  border:none;
+  padding:10px 18px;
+  border-radius:10px 10px 0 0;
+  font-weight:600;
+  color:#5f6368;
+  cursor:pointer;
+  transition:all .2s;
+}
+.tab-btn.active{
+  background:white;
+  color:#2463eb;
+  border:2px solid #e4e7eb;
+  border-bottom:2px solid white;
+  margin-bottom:-2px;
+}
+.tabs-container{flex-wrap:wrap}
+.tab-content{display:none}
+.tab-content.active{display:block}
+
+/* Menús desplegables (Guardar como / Últimos archivos) */
+.dropdown{position:relative;display:inline-block}
+.dropdown-menu{
+  display:none;
+  position:absolute;
+  top:100%;
+  left:0;
+  margin-top:6px;
+  background:white;
+  border:1px solid #c8ccd0;
+  border-radius:10px;
+  box-shadow:0 8px 20px #00000022;
+  min-width:240px;
+  z-index:100;
+  overflow:hidden;
+}
+.dropdown-menu.show{display:block}
+.dropdown-item{
+  display:block;
+  width:100%;
+  text-align:left;
+  border:none;
+  border-bottom:1px solid #f1f3f4;
+  border-radius:0;
+  padding:10px 14px;
+  background:white;
+  font-size:14px;
+}
+.dropdown-item:last-child{border-bottom:none}
+.dropdown-item:hover{background:#f1f5f9}
+.dropdown-empty{padding:12px 14px;font-size:13px;color:#777;text-align:center}
+.recent-meta{display:block;font-size:11px;color:#666;margin-top:2px}
+.dropdown-section{
+  padding:6px 14px 4px;
+  font-size:11px;
+  font-weight:600;
+  color:#5f6368;
+  background:#f8fafc;
+  border-bottom:1px solid #e4e7eb;
+  text-transform:uppercase;
+  letter-spacing:.3px;
+}
+
+/* Estilos de la tabla, espaciado y centrado */
+table{width:100%;border-collapse:collapse;border-radius:10px;overflow:hidden}
+th,td{
+  text-align:center;
+  vertical-align:middle;
+  border-bottom:1px solid #dfe3e8;
+  border-right:1px solid #ffffff88;
+  padding:14px 8px;
+}
+th:last-child,td:last-child{border-right:none}
+th{color:#3c4043;font-size:13px;font-weight:600;filter:brightness(0.96)}
+
+/* Colores pastel por columna en la Pestaña 1 (Inventario Completo) */
+#tab1 th:nth-child(1), #tab1 td:nth-child(1) { background-color: #f1f5f9; width: 44px; }  /* Selección */
+#tab1 th:nth-child(2), #tab1 td:nth-child(2) { background-color: #fffde7; width: 105px; } /* Imagen */
+#tab1 th:nth-child(3), #tab1 td:nth-child(3) { background-color: #e3f2fd; }               /* Nombre */
+#tab1 th:nth-child(4), #tab1 td:nth-child(4) { background-color: #e8f5e9; width: 85px; }  /* Cantidad */
+#tab1 th:nth-child(5), #tab1 td:nth-child(5) { background-color: #fff0e5; }               /* Fecha */
+#tab1 th:nth-child(6), #tab1 td:nth-child(6) { background-color: #f3e5f5; width: 90px; }  /* Acciones */
+
+/* Colores pastel por columna en la Pestaña 2 (Configuración de Papel, Impresión, Silhouette y Observaciones) */
+#tab2 th:nth-child(1), #tab2 td:nth-child(1) { background-color: #e3f2fd; }               /* Nombre */
+#tab2 th:nth-child(2), #tab2 td:nth-child(2) { background-color: #e8f5e9; width: 80px; }  /* Cantidad */
+#tab2 th:nth-child(3), #tab2 td:nth-child(3) { background-color: #e0f2f1; width: 110px; } /* Papel */
+#tab2 th:nth-child(4), #tab2 td:nth-child(4) { background-color: #fce4ec; width: 100px; } /* Impresión */
+#tab2 th:nth-child(5), #tab2 td:nth-child(5) { background-color: #e8eaf6; width: 85px; }  /* Presión */
+#tab2 th:nth-child(6), #tab2 td:nth-child(6) { background-color: #ede7f6; width: 85px; }  /* Velocidad */
+#tab2 th:nth-child(7), #tab2 td:nth-child(7) { background-color: #e8f8f5; width: 80px; }  /* Pases */
+#tab2 th:nth-child(8), #tab2 td:nth-child(8) { background-color: #fef9e7; width: 85px; }  /* Cuchilla */
+#tab2 th:nth-child(9), #tab2 td:nth-child(9) { background-color: #fbeee6; width: 120px; } /* Calidad (Optima/Buena/Regular/Malo) */
+#tab2 th:nth-child(10), #tab2 td:nth-child(10) { background-color: #fcf3cf; min-width: 160px; } /* Observaciones */
+
+/* Pestaña 3 (Ventas) */
+#tab3 th:nth-child(1), #tab3 td:nth-child(1) { background-color: #e3f2fd; }               /* Nombre */
+#tab3 th:nth-child(2), #tab3 td:nth-child(2) { background-color: #fcf3cf; width: 140px; } /* Marca de resma */
+#tab3 th:nth-child(3), #tab3 td:nth-child(3) { background-color: #e8f5e9; width: 95px; }  /* Cant. por plancha */
+#tab3 th:nth-child(4), #tab3 td:nth-child(4) { background-color: #e0f7fa; width: 95px; }  /* Cant. vendidos */
+#tab3 th:nth-child(5), #tab3 td:nth-child(5) { background-color: #fff0e5; width: 110px; } /* Valor hoja */
+#tab3 th:nth-child(6), #tab3 td:nth-child(6) { background-color: #fce4ec; width: 110px; } /* Valor impresión */
+#tab3 th:nth-child(7), #tab3 td:nth-child(7) { background-color: #e0f2f1; width: 110px; } /* Valor de venta */
+#tab3 th:nth-child(8), #tab3 td:nth-child(8) { background-color: #ede7f6; width: 120px; } /* Subtotal */
+
+/* Pestaña 4 (Stock restante) */
+#tab4 th:nth-child(1), #tab4 td:nth-child(1) { background-color: #e3f2fd; }               /* Nombre */
+#tab4 th:nth-child(2), #tab4 td:nth-child(2) { background-color: #e8f5e9; width: 100px; } /* Cantidad */
+#tab4 th:nth-child(3), #tab4 td:nth-child(3) { background-color: #fce4ec; width: 100px; } /* Vendidos */
+#tab4 th:nth-child(4), #tab4 td:nth-child(4) { background-color: #fff0e5; width: 110px; } /* Restante */
+#tab4 th:nth-child(5), #tab4 td:nth-child(5) { background-color: #e0f2f1; width: 130px; } /* Ganancia unitaria */
+#tab4 th:nth-child(6), #tab4 td:nth-child(6) { background-color: #ede7f6; width: 140px; } /* Ganancia total */
+
+/* Resumen final de ventas / stock */
+.sales-summary{width:100%;max-width:520px;margin:22px 0 0 auto}
+.sales-summary td{padding:12px 14px;text-align:right}
+.sales-summary td:first-child{text-align:left;font-weight:600;background:#f1f5f9}
+.sales-summary td:last-child{background:#fff}
+.sales-summary tr.net td{font-size:17px;font-weight:700;background:#e8f5e9}
+.sales-summary tr.net td:first-child{background:#c8e6c9}
+.neg{color:#dc2626}
+.pos{color:#15803d}
+
+.num-input{text-align:center}
+.calc-cell{font-weight:600;color:#3c4043}
+
+/* Selectores y inputs internos de la tabla en pestaña 2 */
+.table-select, .table-input{
+  width:100%;
+  padding:6px 4px;
+  border:1px solid #c8ccd0;
+  border-radius:6px;
+  background:white;
+  font-size:12px;
+  text-align:center;
+}
+.table-input{box-sizing:border-box; text-align:left;}
+
+/* Casillas de selección */
+.chk{
+  width:18px;
+  height:18px;
+  cursor:pointer;
+  accent-color:#2463eb;
+  margin:0;
+  vertical-align:middle;
+}
+tr.selected td{
+  box-shadow:inset 0 0 0 999px rgba(36, 99, 235, 0.08);
+}
+
+/* Miniaturas y botones de imagen */
+.img-cell{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
+.thumb{
+  width:56px;
+  height:56px;
+  object-fit:contain;
+  background:#ffffff;
+  border:1px solid #dcdcdc;
+  border-radius:8px;
+  padding:3px;
+  cursor:zoom-in;
+  transition:transform .15s;
+}
+.thumb:hover{transform:scale(1.06)}
+.img-actions{display:flex;gap:5px;justify-content:center}
+.tiny{padding:4px 8px;font-size:12px;background:#ffffff;border-radius:6px}
+
+/* Botón de acción */
+.row-actions{
+  white-space:nowrap;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+}
+.small{padding:6px 12px;font-size:13px;background:#ffffff}
+
+/* Visor modal de imagen ampliada */
+.modal{
+  display:none;
+  position:fixed;
+  inset:0;
+  background:#000000b8;
+  z-index:200;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+}
+.modal.show{display:flex}
+.modal-box{
+  background:white;
+  padding:16px;
+  border-radius:14px;
+  max-width:90vw;
+  max-height:90vh;
+  text-align:center;
+  box-shadow:0 10px 30px #0005;
+}
+.modal-box img{max-width:82vw;max-height:74vh;object-fit:contain;border-radius:8px;display:block;margin:0 auto 12px}
+.modal-title{font-weight:600;margin-bottom:10px;color:#202124}
+
+.empty{padding:28px;text-align:center;color:#777}
+#status{font-size:13px;color:#666;margin-top:12px}
+
+@media(max-width:650px){
+  body{padding:10px}
+  main{padding:14px}
+  th,td{padding:10px 6px}
+  .hide-mobile{display:none}
+  .thumb{width:44px;height:44px}
+}
+
+/* Estilos exclusivos al imprimir / guardar en PDF */
+@media print {
+  @page { margin: 10mm; size: landscape; }
+  body { background: white !important; padding: 0 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+  main { box-shadow: none !important; max-width: 100% !important; padding: 0 !important; border-radius: 0 !important; }
+  .no-print, .controls, .tabs-container, #status, .empty, .img-actions, .modal { display: none !important; }
+  /* Solo se imprime la pestaña activa (se controla con clase print-only) */
+  .tab-content { display: none !important; }
+  .tab-content.print-only { display: block !important; }
+  #tab1.print-only th:nth-child(1), #tab1.print-only td:nth-child(1),
+  #tab1.print-only th:nth-child(6), #tab1.print-only td:nth-child(6) { display: none !important; }
+  .hide-mobile { display: table-cell !important; }
+  table { border: 1px solid #dfe3e8; margin-bottom: 20px; font-size: 11px; }
+  .thumb { width: 40px !important; height: 40px !important; border: 1px solid #ccc !important; }
+  tr.selected td { box-shadow: none !important; }
+  .print-title { display: block !important; margin-bottom: 12px; font-size: 18px; font-weight: 700; }
+}
+.print-title { display: none; }
+</style>
+</head>
+<body>
+<main>
+<h1>📦 Lista de productos</h1>
+<p>Archivo TXT / PDF / Excel · Configuración Silhouette & Observaciones · Funciona sin internet</p>
+
+<!-- Pestañas -->
+<div class="tabs-container no-print">
+  <button class="tab-btn active" data-tab="tab1" id="btnTab1">📋 Inventario y Archivo</button>
+  <button class="tab-btn" data-tab="tab2" id="btnTab2">🖨️ Configuración Silhouette e Impresión</button>
+  <button class="tab-btn" data-tab="tab3" id="btnTab3">💰 Ventas</button>
+  <button class="tab-btn" data-tab="tab4" id="btnTab4">📦 Stock restante</button>
+</div>
+
+<div class="controls no-print">
+  <button class="primary" id="openBtn">📂 Abrir TXT</button>
+  
+  <div class="dropdown">
+    <button id="recentBtn">🕒 Últimos archivos ▾</button>
+    <div class="dropdown-menu" id="recentMenu"></div>
+  </div>
+
+  <div class="dropdown">
+    <button id="saveAsBtn">💾 Guardar como... ▾</button>
+    <div class="dropdown-menu" id="saveAsMenu">
+      <div class="dropdown-section">Pestaña actual</div>
+      <button class="dropdown-item" id="saveTabTxtBtn">📄 Guardar pestaña como TXT</button>
+      <button class="dropdown-item" id="saveTabXlsBtn">📊 Guardar pestaña como Excel (.xls)</button>
+      <button class="dropdown-item" id="printTabBtn">🖨️ Imprimir / PDF pestaña actual</button>
+      <div class="dropdown-section">Lista completa</div>
+      <button class="dropdown-item" id="saveTxtBtn">📄 Guardar todo como TXT</button>
+      <button class="dropdown-item" id="saveAllXlsBtn">📊 Guardar todo como Excel (.xls)</button>
+      <button class="dropdown-item" id="savePdfBtn">📕 Imprimir / PDF todo</button>
+    </div>
+  </div>
+
+  <button id="addBtn">＋ Agregar producto</button>
+  <button class="danger" id="deleteSelectedBtn" style="display:none">🗑️ Borrar seleccionados (<span id="selectedCount">0</span>)</button>
+  <button id="clearBtn" title="Limpiar lista actual">🧹 Limpiar</button>
+  <input type="file" id="fileInput" accept=".txt,.csv,.tsv,text/plain" hidden>
+  <input type="file" id="imgInput" accept="image/png,image/jpeg,image/webp,image/svg+xml,image/*" hidden>
+</div>
+
+<div class="controls no-print">
+  <input id="search" placeholder="🔎 Buscar producto..." aria-label="Buscar producto">
+  <select id="sort">
+    <option value="nameAsc">Nombre A–Z</option>
+    <option value="nameDesc">Nombre Z–A</option>
+    <option value="qtyAsc">Cantidad menor a mayor</option>
+    <option value="qtyDesc">Cantidad mayor a menor</option>
+    <option value="dateAsc">Fecha más antigua</option>
+    <option value="dateDesc">Fecha más reciente</option>
+  </select>
+</div>
+
+<div class="summary">
+  <div class="summary-stats">
+    <span>Productos: <b id="count">0</b></span>
+    <span>Unidades totales: <b id="total">0</b></span>
+  </div>
+  <span class="no-print" id="selectionHint" style="font-size:13px;color:#475569;display:none"></span>
+</div>
+
+<!-- PESTAÑA 1: Inventario Completo -->
+<div class="tab-content active" id="tab1">
+  <div class="print-title" id="printTitle1">Inventario y Archivo</div>
+  <table>
+    <thead>
+      <tr>
+        <th class="no-print" title="Seleccionar todos los visibles">
+          <input type="checkbox" class="chk" id="selectAllChk" aria-label="Seleccionar todos">
+        </th>
+        <th>Imagen</th>
+        <th>Producto</th>
+        <th>Cantidad</th>
+        <th class="hide-mobile">Fecha (opcional)</th>
+        <th class="no-print">Acciones</th>
+      </tr>
+    </thead>
+    <tbody id="tbody1"></tbody>
+  </table>
+  <div class="empty" id="empty1">Abrí tu TXT, elegí uno de tus últimos archivos o agregá tu primer producto.</div>
+</div>
+
+<!-- PESTAÑA 2: Configuración de Papel, Impresión, Silhouette y Observaciones -->
+<div class="tab-content" id="tab2">
+  <div class="print-title" id="printTitle2">Configuración Silhouette e Impresión</div>
+  <div style="overflow-x:auto;">
+    <table>
+      <thead>
+        <tr>
+          <th>Producto</th>
+          <th>Cantidad</th>
+          <th>Tipo de Papel</th>
+          <th>Calidad Impresión</th>
+          <th>Presión (1-40)</th>
+          <th>Velocidad (1-15)</th>
+          <th>Pases (1-10)</th>
+          <th>Cuchilla (1-10)</th>
+          <th>Calidad</th>
+          <th>Observaciones</th>
+        </tr>
+      </thead>
+      <tbody id="tbody2"></tbody>
+    </table>
+  </div>
+  <div class="empty" id="empty2">No hay productos en la lista.</div>
+</div>
+
+<!-- PESTAÑA 3: Ventas -->
+<div class="tab-content" id="tab3">
+  <div class="print-title" id="printTitle3">Ventas</div>
+  <div style="overflow-x:auto;">
+    <table>
+      <thead>
+        <tr>
+          <th>Producto</th>
+          <th>Marca de resma</th>
+          <th>Cantidad por plancha</th>
+          <th>Cantidad vendidos</th>
+          <th>Valor hoja ($)</th>
+          <th title="Siempre es el 10% del valor de la hoja">Valor impresión ($)<br><small>(10% del valor hoja)</small></th>
+          <th>Valor de venta ($)</th>
+          <th title="(Valor de venta − valor hoja − valor impresión) × cantidad vendidos">Subtotal ($)<br><small>(ganancia × cant. vendidos)</small></th>
+        </tr>
+      </thead>
+      <tbody id="tbody3"></tbody>
+    </table>
+  </div>
+
+  <table class="sales-summary" id="salesSummary">
+    <tbody>
+      <tr><td>Total subtotales</td><td id="sumSubtotal">$ 0,00</td></tr>
+      <tr><td>Costo de feria / local ($)</td><td><span id="fairCostCell"></span></td></tr>
+      <tr><td>Costo de transporte ($)</td><td><span id="transportCostCell"></span></td></tr>
+      <tr class="net"><td>Beneficio neto</td><td id="netProfit">$ 0,00</td></tr>
+    </tbody>
+  </table>
+  <div class="empty" id="empty3">No hay productos en la lista.</div>
+</div>
+
+<!-- PESTAÑA 4: Stock restante -->
+<div class="tab-content" id="tab4">
+  <div class="print-title" id="printTitle4">Stock restante</div>
+  <div style="overflow-x:auto;">
+    <table>
+      <thead>
+        <tr>
+          <th>Producto</th>
+          <th>Cantidad</th>
+          <th>Vendidos</th>
+          <th>Restante<br><small>(cant. − vendidos)</small></th>
+          <th title="Valor de venta − valor hoja − valor impresión">Ganancia unitaria ($)</th>
+          <th title="Ganancia unitaria × cantidad vendidos">Ganancia total ($)</th>
+        </tr>
+      </thead>
+      <tbody id="tbody4"></tbody>
+    </table>
+  </div>
+
+  <table class="sales-summary" id="stockSummary">
+    <tbody>
+      <tr class="net"><td>Total de toda la lista</td><td id="stockTotal">$ 0,00</td></tr>
+    </tbody>
+  </table>
+  <div class="empty" id="empty4">No hay productos en la lista.</div>
+</div>
+
+<div id="status">Formato TXT: Producto [TAB] Cantidad [TAB] Fecha (opcional) · Las configuraciones se conservan localmente.</div>
+</main>
+
+<!-- Modal para ver la imagen ampliada -->
+<div class="modal no-print" id="imgModal">
+  <div class="modal-box">
+    <div class="modal-title" id="modalTitle"></div>
+    <img id="modalImg" src="" alt="Vista previa">
+    <button id="closeModalBtn">Cerrar</button>
+  </div>
+</div>
+
+<script>
+const RECENT_KEY = "lista_productos_recientes_v5";
+const MAX_RECENT = 6;
+
+let products = [];
+let currentFileName = "productos.txt";
+let pendingImageIndex = null;
+let currentTab = "tab1";
+const $ = id => document.getElementById(id);
+
+function cleanNum(n){ return Number.isFinite(Number(n)) ? Number(n) : 0; }
+
+// Generar opciones numéricas para selects
+function generateOptions(min, max, current){
+  let html = "";
+  for(let i = min; i <= max; i++){
+    html += `<option value="${i}" ${Number(current) === i ? "selected" : ""}>${i}</option>`;
+  }
+  return html;
+}
+
+// Cambiar de pestaña
+document.querySelectorAll(".tab-btn").forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+    btn.classList.add("active");
+    currentTab = btn.getAttribute("data-tab");
+    $(currentTab).classList.add("active");
+    render();
+  };
+});
+
+// Optimizar imagen al subirla
+function compressImage(file){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      if(file.type === "image/svg+xml"){ resolve(e.target.result); return; }
+      const img = new Image();
+      img.onload = () => {
+        const maxSide = 420;
+        let w = img.width, h = img.height;
+        if(w > maxSide || h > maxSide){
+          if(w >= h){ h = Math.round(h * maxSide / w); w = maxSide; }
+          else { w = Math.round(w * maxSide / h); h = maxSide; }
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL("image/webp", 0.85));
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function getRecentFiles(){
+  try { return JSON.parse(localStorage.getItem(RECENT_KEY)) || []; }
+  catch(e){ return []; }
+}
+
+function saveToRecent(name, items){
+  if(!items || !items.length) return;
+  const cleanItems = items.map(({selected, ...rest}) => rest);
+  try {
+    let list = getRecentFiles().filter(f => f.name !== name);
+    const now = new Date();
+    const savedAt = now.toLocaleDateString("es-AR") + " " + now.toLocaleTimeString("es-AR", {hour:"2-digit", minute:"2-digit"});
+    list.unshift({
+      name: name,
+      savedAt: savedAt,
+      products: JSON.parse(JSON.stringify(cleanItems))
+    });
+    if(list.length > MAX_RECENT) list = list.slice(0, MAX_RECENT);
+    localStorage.setItem(RECENT_KEY, JSON.stringify(list));
+  } catch(e){
+    try {
+      const trimmed = [{
+        name: name,
+        savedAt: new Date().toLocaleDateString("es-AR"),
+        products: JSON.parse(JSON.stringify(cleanItems))
+      }];
+      localStorage.setItem(RECENT_KEY, JSON.stringify(trimmed));
+    } catch(err){}
+  }
+}
+
+function renderRecentMenu(){
+  const menu = $("recentMenu");
+  const list = getRecentFiles();
+  menu.innerHTML = "";
+  if(!list.length){
+    const div = document.createElement("div");
+    div.className = "dropdown-empty";
+    div.textContent = "No hay archivos recientes";
+    menu.appendChild(div);
+    return;
+  }
+  list.forEach(item => {
+    const btn = document.createElement("button");
+    btn.className = "dropdown-item";
+    const imgCount = item.products.filter(p => p.image).length;
+    const imgLabel = imgCount ? ` · ${imgCount} img.` : "";
+    btn.innerHTML = `<strong>📄 ${escapeHtml(item.name)}</strong><span class="recent-meta">${item.products.length} prod.${imgLabel} · ${item.savedAt}</span>`;
+    btn.onclick = () => {
+      products = JSON.parse(JSON.stringify(item.products)).map(p => ({
+        ...p,
+        paper: p.paper || "fotografico",
+        printQuality: p.printQuality || "normal",
+        pressure: p.pressure || 10,
+        speed: p.speed || 5,
+        passes: p.passes || 1,
+        blade: p.blade || 2,
+        quality: p.quality || "optima",
+        observations: p.observations || "",
+        perSheet: p.perSheet || 0,
+        soldQty: p.soldQty || 0,
+        sheetValue: p.sheetValue || 0,
+        salePrice: p.salePrice || 0,
+        fairCost: p.fairCost || 0,
+        transportCost: p.transportCost || 0,
+        reamBrand: p.reamBrand || "",
+        selected: false
+      }));
+      currentFileName = item.name;
+      $("search").value = "";
+      render();
+      $("status").textContent = `Archivo reciente cargado: ${item.name} · ${products.length} productos`;
+      closeMenus();
+    };
+    menu.appendChild(btn);
+  });
+}
+
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+}
+
+function openImageModal(src, title){
+  $("modalImg").src = src;
+  $("modalTitle").textContent = title;
+  $("imgModal").classList.add("show");
+}
+
+$("closeModalBtn").onclick = () => $("imgModal").classList.remove("show");
+$("imgModal").onclick = e => { if(e.target === $("imgModal")) $("imgModal").classList.remove("show"); };
+
+function triggerImageUpload(index){
+  pendingImageIndex = index;
+  $("imgInput").click();
+}
+
+$("imgInput").onchange = async e => {
+  const file = e.target.files[0];
+  if(!file || pendingImageIndex === null) return;
+  try {
+    const dataUrl = await compressImage(file);
+    products[pendingImageIndex].image = dataUrl;
+    render();
+    $("status").textContent = `Imagen agregada a "${products[pendingImageIndex].name}".`;
+  } catch(err){
+    alert("No se pudo cargar la imagen seleccionada.");
+  }
+  pendingImageIndex = null;
+  e.target.value = "";
+};
+
+function getFilteredSortedList(){
+  const q = $("search").value.trim().toLocaleLowerCase("es");
+  let list = products.map((p, i) => ({...p, index: i})).filter(p => p.name.toLocaleLowerCase("es").includes(q));
+  const mode = $("sort").value;
+  list.sort((a, b) => {
+    if(mode === "nameAsc") return a.name.localeCompare(b.name, "es", {sensitivity:"base"});
+    if(mode === "nameDesc") return b.name.localeCompare(a.name, "es", {sensitivity:"base"});
+    if(mode === "qtyAsc") return a.qty - b.qty || a.name.localeCompare(b.name, "es");
+    if(mode === "qtyDesc") return b.qty - a.qty || a.name.localeCompare(b.name, "es");
+    if(mode === "dateAsc") return (a.date || "9999-99-99").localeCompare(b.date || "9999-99-99");
+    if(mode === "dateDesc") return (b.date || "0000-00-00").localeCompare(a.date || "0000-00-00");
+  });
+  return list;
+}
+
+function updateSelectionUI(visibleList){
+  const totalSelected = products.filter(p => p.selected).length;
+  const delBtn = $("deleteSelectedBtn");
+  const hint = $("selectionHint");
+  const selectAll = $("selectAllChk");
+
+  if(totalSelected > 0){
+    delBtn.style.display = "inline-block";
+    $("selectedCount").textContent = totalSelected;
+    hint.style.display = "inline";
+    hint.textContent = `${totalSelected} ${totalSelected === 1 ? "producto seleccionado" : "productos seleccionados"}`;
+  } else {
+    delBtn.style.display = "none";
+    hint.style.display = "none";
+  }
+
+  if(!visibleList || !visibleList.length){
+    selectAll.checked = false;
+    selectAll.indeterminate = false;
+    selectAll.disabled = true;
+  } else {
+    selectAll.disabled = false;
+    const visibleSelected = visibleList.filter(p => products[p.index].selected).length;
+    selectAll.checked = visibleSelected === visibleList.length;
+    selectAll.indeterminate = visibleSelected > 0 && visibleSelected < visibleList.length;
+  }
+}
+
+$("selectAllChk").onchange = e => {
+  const checked = e.target.checked;
+  const visibleList = getFilteredSortedList();
+  visibleList.forEach(p => { products[p.index].selected = checked; });
+  render();
+};
+
+$("deleteSelectedBtn").onclick = () => {
+  const selectedItems = products.filter(p => p.selected);
+  if(!selectedItems.length) return;
+  const msg = selectedItems.length === 1
+    ? `¿Eliminar el producto seleccionado ("${selectedItems[0].name}")?`
+    : `¿Eliminar los ${selectedItems.length} productos seleccionados?`;
+  if(confirm(msg)){
+    products = products.filter(p => !p.selected);
+    render();
+    $("status").textContent = `Se eliminaron ${selectedItems.length} ${selectedItems.length === 1 ? "producto" : "productos"}.`;
+  }
+};
+
+// Costos globales de la pestaña Ventas (se guardan aparte)
+const EXTRAS_KEY = "lista_productos_ventas_extras_v1";
+let salesExtras = { fairCost: 0, transportCost: 0 };
+try {
+  const saved = JSON.parse(localStorage.getItem(EXTRAS_KEY));
+  if(saved){ salesExtras.fairCost = cleanNum(saved.fairCost); salesExtras.transportCost = cleanNum(saved.transportCost); }
+} catch(e){}
+function saveExtras(){
+  try { localStorage.setItem(EXTRAS_KEY, JSON.stringify(salesExtras)); } catch(e){}
+}
+
+// Subtotal = (valor de venta − valor hoja − valor impresión) × cantidad vendidos
+function unitProfit(p){
+  return cleanNum(p.salePrice) - (cleanNum(p.sheetValue) + printValue(p.sheetValue));
+}
+function subtotalOf(p){
+  return unitProfit(p) * cleanNum(p.soldQty);
+}
+function remainingQty(p){
+  return cleanNum(p.qty) - cleanNum(p.soldQty);
+}
+function remainingValue(p){
+  return unitProfit(p) * remainingQty(p);
+}
+function signClass(n){ return n < 0 ? "neg" : (n > 0 ? "pos" : ""); }
+function setMoney(el, n){
+  el.textContent = fmtMoney(n);
+  el.className = signClass(n);
+}
+function updateSalesTotals(){
+  const totalSub = Math.round(products.reduce((sum, p) => sum + subtotalOf(p), 0) * 100) / 100;
+  const net = Math.round((totalSub - cleanNum(salesExtras.fairCost) - cleanNum(salesExtras.transportCost)) * 100) / 100;
+  setMoney($("sumSubtotal"), totalSub);
+  setMoney($("netProfit"), net);
+}
+
+// Valor impresión = 10% del valor de la hoja
+function printValue(sheetValue){
+  return Math.round(cleanNum(sheetValue) * 0.10 * 100) / 100;
+}
+function fmtMoney(n){
+  return "$ " + Number(n).toLocaleString("es-AR", {minimumFractionDigits: 2, maximumFractionDigits: 2});
+}
+
+function numberInput(value, onChange){
+  const inp = document.createElement("input");
+  inp.type = "number";
+  inp.min = "0";
+  inp.step = "any";
+  inp.className = "table-input num-input";
+  inp.placeholder = "0";
+  inp.value = value ? value : "";
+  inp.oninput = e => onChange(cleanNum(e.target.value));
+  return inp;
+}
+
+function render(){
+  const list = getFilteredSortedList();
+  
+  // Render Pestaña 1
+  $("tbody1").innerHTML = "";
+  list.forEach(p => {
+    const tr = document.createElement("tr");
+    if(p.selected) tr.className = "selected";
+
+    const selTd = document.createElement("td");
+    selTd.className = "no-print";
+    const chk = document.createElement("input");
+    chk.type = "checkbox";
+    chk.className = "chk";
+    chk.checked = !!p.selected;
+    chk.ariaLabel = `Seleccionar ${p.name}`;
+    chk.onchange = e => {
+      products[p.index].selected = e.target.checked;
+      tr.classList.toggle("selected", e.target.checked);
+      updateSelectionUI(getFilteredSortedList());
+    };
+    selTd.append(chk);
+
+    const imgTd = document.createElement("td");
+    const box = document.createElement("div");
+    box.className = "img-cell";
+    if(p.image){
+      const img = document.createElement("img");
+      img.className = "thumb";
+      img.src = p.image;
+      img.alt = p.name;
+      img.title = "Clic para ampliar";
+      img.onclick = () => openImageModal(p.image, p.name);
+
+      const actDiv = document.createElement("div");
+      actDiv.className = "img-actions no-print";
+      const chgBtn = document.createElement("button");
+      chgBtn.className = "tiny";
+      chgBtn.textContent = "Cambiar";
+      chgBtn.onclick = () => triggerImageUpload(p.index);
+
+      const rmBtn = document.createElement("button");
+      rmBtn.className = "tiny";
+      rmBtn.textContent = "✕";
+      rmBtn.title = "Quitar imagen";
+      rmBtn.onclick = () => { products[p.index].image = ""; render(); };
+
+      actDiv.append(chgBtn, rmBtn);
+      box.append(img, actDiv);
+    } else {
+      const addImgBtn = document.createElement("button");
+      addImgBtn.className = "tiny no-print";
+      addImgBtn.textContent = "🖼️ Subir";
+      addImgBtn.title = "Subir imagen PNG, JPG o SVG";
+      addImgBtn.onclick = () => triggerImageUpload(p.index);
+      box.append(addImgBtn);
+    }
+    imgTd.append(box);
+
+    const name = document.createElement("td"); name.textContent = p.name;
+    const qty = document.createElement("td"); qty.textContent = p.qty;
+    const date = document.createElement("td"); date.className = "hide-mobile"; date.textContent = p.date || "—";
+    const actions = document.createElement("td"); actions.className = "row-actions no-print";
+    const edit = document.createElement("button"); edit.className = "small"; edit.textContent = "Editar"; edit.onclick = () => editProduct(p.index);
+    actions.append(edit);
+
+    tr.append(selTd, imgTd, name, qty, date, actions);
+    $("tbody1").append(tr);
+  });
+  $("empty1").style.display = list.length ? "none" : "block";
+
+  // Render Pestaña 2 (Configuración de Papel, Impresión, Silhouette, Calidad única y Observaciones)
+  $("tbody2").innerHTML = "";
+  list.forEach(p => {
+    const tr = document.createElement("tr");
+
+    const name = document.createElement("td"); name.textContent = p.name;
+    const qty = document.createElement("td"); qty.textContent = p.qty;
+
+    // 1. Tipo de Papel
+    const paperTd = document.createElement("td");
+    const paperSelect = document.createElement("select");
+    paperSelect.className = "table-select";
+    paperSelect.innerHTML = `
+      <option value="fotografico" ${p.paper === "fotografico" ? "selected" : ""}>Fotográfico</option>
+      <option value="normal" ${p.paper === "normal" ? "selected" : ""}>Normal</option>
+      <option value="vinilo" ${p.paper === "vinilo" ? "selected" : ""}>Vinilo</option>
+    `;
+    paperSelect.onchange = e => { products[p.index].paper = e.target.value; };
+    paperTd.append(paperSelect);
+
+    // 2. Calidad de Impresión
+    const printTd = document.createElement("td");
+    const printSelect = document.createElement("select");
+    printSelect.className = "table-select";
+    printSelect.innerHTML = `
+      <option value="alta" ${p.printQuality === "alta" ? "selected" : ""}>Alta</option>
+      <option value="normal" ${p.printQuality === "normal" ? "selected" : ""}>Normal</option>
+    `;
+    printSelect.onchange = e => { products[p.index].printQuality = e.target.value; };
+    printTd.append(printSelect);
+
+    // 3. Presión (1-40)
+    const pressTd = document.createElement("td");
+    const pressSelect = document.createElement("select");
+    pressSelect.className = "table-select";
+    pressSelect.innerHTML = generateOptions(1, 40, p.pressure || 10);
+    pressSelect.onchange = e => { products[p.index].pressure = Number(e.target.value); };
+    pressTd.append(pressSelect);
+
+    // 3. Velocidad (1-15)
+    const speedTd = document.createElement("td");
+    const speedSelect = document.createElement("select");
+    speedSelect.className = "table-select";
+    speedSelect.innerHTML = generateOptions(1, 15, p.speed || 5);
+    speedSelect.onchange = e => { products[p.index].speed = Number(e.target.value); };
+    speedTd.append(speedSelect);
+
+    // 3. Pases (1-10)
+    const passesTd = document.createElement("td");
+    const passesSelect = document.createElement("select");
+    passesSelect.className = "table-select";
+    passesSelect.innerHTML = generateOptions(1, 10, p.passes || 1);
+    passesSelect.onchange = e => { products[p.index].passes = Number(e.target.value); };
+    passesTd.append(passesSelect);
+
+    // 3. Cuchilla (1-10)
+    const bladeTd = document.createElement("td");
+    const bladeSelect = document.createElement("select");
+    bladeSelect.className = "table-select";
+    bladeSelect.innerHTML = generateOptions(1, 10, p.blade || 2);
+    bladeSelect.onchange = e => { products[p.index].blade = Number(e.target.value); };
+    bladeTd.append(bladeSelect);
+
+    // 4. Calidad (Optima, Buena, Regular, Malo) en 1 sola celda desplegable
+    const qualityTd = document.createElement("td");
+    const qualitySelect = document.createElement("select");
+    qualitySelect.className = "table-select";
+    const currentQ = p.quality || "optima";
+    qualitySelect.innerHTML = `
+      <option value="optima" ${currentQ === "optima" ? "selected" : ""}>Óptima</option>
+      <option value="buena" ${currentQ === "buena" ? "selected" : ""}>Buena</option>
+      <option value="regular" ${currentQ === "regular" ? "selected" : ""}>Regular</option>
+      <option value="malo" ${currentQ === "malo" ? "selected" : ""}>Malo</option>
+    `;
+    qualitySelect.onchange = e => { products[p.index].quality = e.target.value; };
+    qualityTd.append(qualitySelect);
+
+    // 5. Observaciones (Editable)
+    const obsTd = document.createElement("td");
+    const obsInput = document.createElement("input");
+    obsInput.type = "text";
+    obsInput.className = "table-input";
+    obsInput.placeholder = "Escribir nota...";
+    obsInput.value = p.observations || "";
+    obsInput.oninput = e => { products[p.index].observations = e.target.value; };
+    obsTd.append(obsInput);
+
+    tr.append(name, qty, paperTd, printTd, pressTd, speedTd, passesTd, bladeTd, qualityTd, obsTd);
+    $("tbody2").append(tr);
+  });
+  $("empty2").style.display = list.length ? "none" : "block";
+
+  // Render Pestaña 3 (Ventas)
+  $("tbody3").innerHTML = "";
+  list.forEach(p => {
+    const tr = document.createElement("tr");
+    const name = document.createElement("td"); name.textContent = p.name;
+
+    const brandTd = document.createElement("td");
+    const brandSelect = document.createElement("select");
+    brandSelect.className = "table-select";
+    const brandOptions = ["ARTJET", "BASIC", "TITANIUM", "HOLOGRAFICO"];
+    if(p.reamBrand && !brandOptions.includes(p.reamBrand)) brandOptions.push(p.reamBrand);
+    brandSelect.innerHTML = `<option value="">— Elegir —</option>` +
+      brandOptions.map(b => `<option value="${escapeHtml(b)}" ${p.reamBrand === b ? "selected" : ""}>${escapeHtml(b)}</option>`).join("");
+    brandSelect.onchange = e => { products[p.index].reamBrand = e.target.value; };
+    brandTd.append(brandSelect);
+
+    const perSheetTd = document.createElement("td");
+    perSheetTd.append(numberInput(p.perSheet, v => { products[p.index].perSheet = v; }));
+
+    const printTd = document.createElement("td");
+    printTd.className = "calc-cell";
+    printTd.textContent = fmtMoney(printValue(p.sheetValue));
+
+    const subTd = document.createElement("td");
+    subTd.className = "calc-cell";
+    setMoney(subTd, subtotalOf(p));
+
+    const soldTd = document.createElement("td");
+    soldTd.append(numberInput(p.soldQty, v => {
+      products[p.index].soldQty = v;
+      setMoney(subTd, subtotalOf(products[p.index]));
+      updateSalesTotals();
+    }));
+
+    const sheetTd = document.createElement("td");
+    sheetTd.append(numberInput(p.sheetValue, v => {
+      products[p.index].sheetValue = v;
+      printTd.textContent = fmtMoney(printValue(v));
+      setMoney(subTd, subtotalOf(products[p.index]));
+      updateSalesTotals();
+    }));
+
+    const saleTd = document.createElement("td");
+    saleTd.append(numberInput(p.salePrice, v => {
+      products[p.index].salePrice = v;
+      setMoney(subTd, subtotalOf(products[p.index]));
+      updateSalesTotals();
+    }));
+
+    tr.append(name, brandTd, perSheetTd, soldTd, sheetTd, printTd, saleTd, subTd);
+    $("tbody3").append(tr);
+  });
+  $("empty3").style.display = list.length ? "none" : "block";
+
+  // Costos globales (feria y transporte) y beneficio neto
+  $("fairCostCell").replaceChildren(numberInput(salesExtras.fairCost, v => { salesExtras.fairCost = v; saveExtras(); updateSalesTotals(); }));
+  $("transportCostCell").replaceChildren(numberInput(salesExtras.transportCost, v => { salesExtras.transportCost = v; saveExtras(); updateSalesTotals(); }));
+  updateSalesTotals();
+
+  // Render Pestaña 4 (Stock restante)
+  $("tbody4").innerHTML = "";
+  let gainSum = 0;
+  list.forEach(p => {
+    const tr = document.createElement("tr");
+    const name = document.createElement("td"); name.textContent = p.name;
+    const qtyTd = document.createElement("td"); qtyTd.textContent = p.qty;
+    const soldTd = document.createElement("td"); soldTd.textContent = p.soldQty || 0;
+    const rest = remainingQty(p);
+    const restTd = document.createElement("td");
+    restTd.className = "calc-cell";
+    restTd.textContent = rest;
+    if(rest < 0) restTd.classList.add("neg");
+
+    const unit = unitProfit(p);
+    const unitTd = document.createElement("td");
+    unitTd.className = "calc-cell";
+    setMoney(unitTd, unit);
+
+    const totalGain = subtotalOf(p); // unitaria × vendidos
+    gainSum += totalGain;
+    const gainTd = document.createElement("td");
+    gainTd.className = "calc-cell";
+    setMoney(gainTd, totalGain);
+
+    tr.append(name, qtyTd, soldTd, restTd, unitTd, gainTd);
+    $("tbody4").append(tr);
+  });
+  $("empty4").style.display = list.length ? "none" : "block";
+  setMoney($("stockTotal"), Math.round(gainSum * 100) / 100);
+
+  $("count").textContent = products.length;
+  $("total").textContent = products.reduce((sum, p) => sum + cleanNum(p.qty), 0);
+  updateSelectionUI(list);
+}
+
+function addProduct(){
+  const name = prompt("Nombre del producto:"); if(name === null) return;
+  const n = name.trim(); if(!n) return alert("Ingresá un nombre.");
+  const qty = prompt("Cantidad:", "0"); if(qty === null) return;
+  const date = prompt("Fecha opcional (AAAA-MM-DD). Dejá vacío si no corresponde:", "");
+  const newIndex = products.length;
+  products.push({
+    name: n,
+    qty: cleanNum(qty),
+    date: (date || "").trim(),
+    image: "",
+    paper: "fotografico",
+    printQuality: "normal",
+    pressure: 10,
+    speed: 5,
+    passes: 1,
+    blade: 2,
+    quality: "optima",
+    observations: "",
+    perSheet: 0,
+    soldQty: 0,
+    sheetValue: 0,
+    salePrice: 0,
+    fairCost: 0,
+    transportCost: 0,
+    reamBrand: "",
+    selected: false
+  });
+  render();
+  if(confirm("¿Querés agregar una imagen de referencia ahora?")){
+    triggerImageUpload(newIndex);
+  }
+}
+
+function editProduct(i){
+  const p = products[i];
+  const name = prompt("Nombre:", p.name); if(name === null) return;
+  if(!name.trim()) return alert("El nombre no puede estar vacío.");
+  const qty = prompt("Cantidad:", p.qty); if(qty === null) return;
+  const date = prompt("Fecha (AAAA-MM-DD) o vacío:", p.date || ""); if(date === null) return;
+  products[i] = {...p, name: name.trim(), qty: cleanNum(qty), date: date.trim()};
+  render();
+}
+
+function parseText(text){
+  const lines = text.replace(/^\uFEFF/, "").split(/\r?\n/).filter(line => line.trim());
+  let result = [];
+  for(const line of lines){
+    let parts = line.includes("\t") ? line.split("\t") : line.includes(";") ? line.split(";") : line.split(",");
+    if(parts.length < 2){
+      const m = line.match(/^(.*?)\s+(-?\d+(?:[.,]\d+)?)\s*$/);
+      if(m) parts = [m[1], m[2]];
+    }
+    if(parts.length < 2) continue;
+    const name = parts[0].trim(), qty = cleanNum(parts[1].trim().replace(",", "."));
+    if(!name) continue;
+    const date = (parts[2] || "").trim();
+    if(/^(producto|nombre|art[ií]culo)$/i.test(name) && /^(cantidad|qty|stock)$/i.test(parts[1].trim())) continue;
+    result.push({
+      name,
+      qty,
+      date,
+      image: "",
+      paper: "fotografico",
+      printQuality: "normal",
+      pressure: 10,
+      speed: 5,
+      passes: 1,
+      blade: 2,
+      quality: "optima",
+      observations: "",
+      perSheet: 0,
+      soldQty: 0,
+      sheetValue: 0,
+      salePrice: 0,
+      fairCost: 0,
+      transportCost: 0,
+      reamBrand: "",
+      selected: false
+    });
+  }
+  return result;
+}
+
+// Menús desplegables
+function closeMenus(){
+  $("recentMenu").classList.remove("show");
+  $("saveAsMenu").classList.remove("show");
+}
+
+$("recentBtn").onclick = e => {
+  e.stopPropagation();
+  const isOpen = $("recentMenu").classList.contains("show");
+  closeMenus();
+  if(!isOpen){
+    renderRecentMenu();
+    $("recentMenu").classList.add("show");
+  }
+};
+
+$("saveAsBtn").onclick = e => {
+  e.stopPropagation();
+  const isOpen = $("saveAsMenu").classList.contains("show");
+  closeMenus();
+  if(!isOpen) $("saveAsMenu").classList.add("show");
+};
+
+document.addEventListener("click", closeMenus);
+
+// Abrir TXT
+$("openBtn").onclick = () => $("fileInput").click();
+$("fileInput").onchange = async e => {
+  const file = e.target.files[0]; if(!file) return;
+  const text = await file.text();
+  const parsed = parseText(text);
+  if(!parsed.length){
+    alert("No se encontraron líneas válidas. Usá el formato Producto TAB Cantidad.");
+    return;
+  }
+  const today = new Date();
+  const automaticDate = [today.getFullYear(), String(today.getMonth() + 1).padStart(2, "0"), String(today.getDate()).padStart(2, "0")].join("-");
+  parsed.forEach(product => { if(!product.date) product.date = automaticDate; });
+  products = parsed;
+  currentFileName = file.name.replace(/\.[^.]+$/, "") + ".txt";
+  saveToRecent(currentFileName, products);
+  render();
+  $("status").textContent = `Archivo abierto: ${file.name} · ${products.length} productos`;
+  e.target.value = "";
+};
+
+// ========== GUARDAR / IMPRIMIR POR PESTAÑA ==========
+
+const TAB_NAMES = {
+  tab1: "Inventario",
+  tab2: "Configuracion_Silhouette",
+  tab3: "Ventas",
+  tab4: "Stock_restante"
+};
+
+const PAPER_LABELS = { fotografico: "Fotográfico", normal: "Normal", vinilo: "Vinilo" };
+const PRINT_LABELS = { alta: "Alta", normal: "Normal" };
+const QUALITY_LABELS = { optima: "Óptima", buena: "Buena", regular: "Regular", malo: "Malo" };
+
+function getTabLabel(){
+  return TAB_NAMES[currentTab] || "Pestaña";
+}
+
+function downloadBlob(blob, filename){
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+// Generar contenido TXT según pestaña actual
+function buildTabTxt(){
+  const list = getFilteredSortedList();
+  if(currentTab === "tab1"){
+    return list.map(p => `${p.name}\t${p.qty}${p.date ? `\t${p.date}` : ""}`).join("\r\n");
+  }
+  if(currentTab === "tab2"){
+    const header = "Producto\tCantidad\tTipo de Papel\tCalidad Impresión\tPresión\tVelocidad\tPases\tCuchilla\tCalidad\tObservaciones";
+    const rows = list.map(p => [
+      p.name,
+      p.qty,
+      PAPER_LABELS[p.paper] || p.paper || "",
+      PRINT_LABELS[p.printQuality] || p.printQuality || "",
+      p.pressure || 10,
+      p.speed || 5,
+      p.passes || 1,
+      p.blade || 2,
+      QUALITY_LABELS[p.quality] || p.quality || "",
+      (p.observations || "").replace(/\t/g, " ")
+    ].join("\t"));
+    return [header, ...rows].join("\r\n");
+  }
+  if(currentTab === "tab3"){
+    const header = "Producto\tMarca de resma\tCant. por plancha\tCant. vendidos\tValor hoja\tValor impresión\tValor de venta\tSubtotal";
+    const rows = list.map(p => [
+      p.name,
+      p.reamBrand || "",
+      p.perSheet || 0,
+      p.soldQty || 0,
+      cleanNum(p.sheetValue).toFixed(2),
+      printValue(p.sheetValue).toFixed(2),
+      cleanNum(p.salePrice).toFixed(2),
+      subtotalOf(p).toFixed(2)
+    ].join("\t"));
+    const totalSub = products.reduce((s, p) => s + subtotalOf(p), 0);
+    const net = totalSub - cleanNum(salesExtras.fairCost) - cleanNum(salesExtras.transportCost);
+    const footer = [
+      "",
+      `Total subtotales\t\t\t\t\t\t\t${totalSub.toFixed(2)}`,
+      `Costo feria/local\t\t\t\t\t\t\t${cleanNum(salesExtras.fairCost).toFixed(2)}`,
+      `Costo transporte\t\t\t\t\t\t\t${cleanNum(salesExtras.transportCost).toFixed(2)}`,
+      `Beneficio neto\t\t\t\t\t\t\t${net.toFixed(2)}`
+    ].join("\r\n");
+    return [header, ...rows, footer].join("\r\n");
+  }
+  // tab4 - Stock restante
+  const header = "Producto\tCantidad\tVendidos\tRestante\tGanancia unitaria\tGanancia total";
+  const rows = list.map(p => [
+    p.name,
+    p.qty,
+    p.soldQty || 0,
+    remainingQty(p),
+    unitProfit(p).toFixed(2),
+    subtotalOf(p).toFixed(2)
+  ].join("\t"));
+  const totalGain = list.reduce((s, p) => s + subtotalOf(p), 0);
+  return [header, ...rows, "", `Total de toda la lista\t\t\t\t\t${totalGain.toFixed(2)}`].join("\r\n");
+}
+
+// Generar HTML de tabla para Excel (formato .xls compatible)
+function buildTabExcelHtml(){
+  const list = getFilteredSortedList();
+  let html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+<head><meta charset="UTF-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>${getTabLabel()}</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head>
+<body><table border="1">`;
+
+  if(currentTab === "tab1"){
+    html += `<tr><th>Producto</th><th>Cantidad</th><th>Fecha</th></tr>`;
+    list.forEach(p => {
+      html += `<tr><td>${escapeHtml(p.name)}</td><td>${p.qty}</td><td>${escapeHtml(p.date || "")}</td></tr>`;
+    });
+  } else if(currentTab === "tab2"){
+    html += `<tr><th>Producto</th><th>Cantidad</th><th>Tipo de Papel</th><th>Calidad Impresión</th><th>Presión</th><th>Velocidad</th><th>Pases</th><th>Cuchilla</th><th>Calidad</th><th>Observaciones</th></tr>`;
+    list.forEach(p => {
+      html += `<tr>
+        <td>${escapeHtml(p.name)}</td>
+        <td>${p.qty}</td>
+        <td>${escapeHtml(PAPER_LABELS[p.paper] || p.paper || "")}</td>
+        <td>${escapeHtml(PRINT_LABELS[p.printQuality] || p.printQuality || "")}</td>
+        <td>${p.pressure || 10}</td>
+        <td>${p.speed || 5}</td>
+        <td>${p.passes || 1}</td>
+        <td>${p.blade || 2}</td>
+        <td>${escapeHtml(QUALITY_LABELS[p.quality] || p.quality || "")}</td>
+        <td>${escapeHtml(p.observations || "")}</td>
+      </tr>`;
+    });
+  } else if(currentTab === "tab3"){
+    html += `<tr><th>Producto</th><th>Marca de resma</th><th>Cant. por plancha</th><th>Cant. vendidos</th><th>Valor hoja</th><th>Valor impresión</th><th>Valor de venta</th><th>Subtotal</th></tr>`;
+    list.forEach(p => {
+      html += `<tr>
+        <td>${escapeHtml(p.name)}</td>
+        <td>${escapeHtml(p.reamBrand || "")}</td>
+        <td>${p.perSheet || 0}</td>
+        <td>${p.soldQty || 0}</td>
+        <td>${cleanNum(p.sheetValue).toFixed(2)}</td>
+        <td>${printValue(p.sheetValue).toFixed(2)}</td>
+        <td>${cleanNum(p.salePrice).toFixed(2)}</td>
+        <td>${subtotalOf(p).toFixed(2)}</td>
+      </tr>`;
+    });
+    const totalSub = products.reduce((s, p) => s + subtotalOf(p), 0);
+    const net = totalSub - cleanNum(salesExtras.fairCost) - cleanNum(salesExtras.transportCost);
+    html += `<tr><td colspan="7"><b>Total subtotales</b></td><td><b>${totalSub.toFixed(2)}</b></td></tr>`;
+    html += `<tr><td colspan="7">Costo feria/local</td><td>${cleanNum(salesExtras.fairCost).toFixed(2)}</td></tr>`;
+    html += `<tr><td colspan="7">Costo transporte</td><td>${cleanNum(salesExtras.transportCost).toFixed(2)}</td></tr>`;
+    html += `<tr><td colspan="7"><b>Beneficio neto</b></td><td><b>${net.toFixed(2)}</b></td></tr>`;
+  } else {
+    // tab4 Stock restante
+    html += `<tr><th>Producto</th><th>Cantidad</th><th>Vendidos</th><th>Restante</th><th>Ganancia unitaria</th><th>Ganancia total</th></tr>`;
+    list.forEach(p => {
+      html += `<tr>
+        <td>${escapeHtml(p.name)}</td>
+        <td>${p.qty}</td>
+        <td>${p.soldQty || 0}</td>
+        <td>${remainingQty(p)}</td>
+        <td>${unitProfit(p).toFixed(2)}</td>
+        <td>${subtotalOf(p).toFixed(2)}</td>
+      </tr>`;
+    });
+    const totalGain = list.reduce((s, p) => s + subtotalOf(p), 0);
+    html += `<tr><td colspan="5"><b>Total de toda la lista</b></td><td><b>${totalGain.toFixed(2)}</b></td></tr>`;
+  }
+
+  html += `</table></body></html>`;
+  return html;
+}
+
+// Generar Excel completo (todas las pestañas como hojas)
+function buildAllExcelHtml(){
+  const list = products.slice();
+  let html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+<head><meta charset="UTF-8"></head><body>`;
+
+  // Hoja 1 - Inventario
+  html += `<table border="1"><caption><b>Inventario</b></caption>
+    <tr><th>Producto</th><th>Cantidad</th><th>Fecha</th></tr>`;
+  list.forEach(p => {
+    html += `<tr><td>${escapeHtml(p.name)}</td><td>${p.qty}</td><td>${escapeHtml(p.date || "")}</td></tr>`;
+  });
+  html += `</table><br><br>`;
+
+  // Hoja 2 - Configuración
+  html += `<table border="1"><caption><b>Configuración Silhouette</b></caption>
+    <tr><th>Producto</th><th>Cantidad</th><th>Tipo de Papel</th><th>Calidad Impresión</th><th>Presión</th><th>Velocidad</th><th>Pases</th><th>Cuchilla</th><th>Calidad</th><th>Observaciones</th></tr>`;
+  list.forEach(p => {
+    html += `<tr>
+      <td>${escapeHtml(p.name)}</td>
+      <td>${p.qty}</td>
+      <td>${escapeHtml(PAPER_LABELS[p.paper] || p.paper || "")}</td>
+      <td>${escapeHtml(PRINT_LABELS[p.printQuality] || p.printQuality || "")}</td>
+      <td>${p.pressure || 10}</td>
+      <td>${p.speed || 5}</td>
+      <td>${p.passes || 1}</td>
+      <td>${p.blade || 2}</td>
+      <td>${escapeHtml(QUALITY_LABELS[p.quality] || p.quality || "")}</td>
+      <td>${escapeHtml(p.observations || "")}</td>
+    </tr>`;
+  });
+  html += `</table><br><br>`;
+
+  // Hoja 3 - Ventas
+  html += `<table border="1"><caption><b>Ventas</b></caption>
+    <tr><th>Producto</th><th>Marca de resma</th><th>Cant. por plancha</th><th>Cant. vendidos</th><th>Valor hoja</th><th>Valor impresión</th><th>Valor de venta</th><th>Subtotal</th></tr>`;
+  list.forEach(p => {
+    html += `<tr>
+      <td>${escapeHtml(p.name)}</td>
+      <td>${escapeHtml(p.reamBrand || "")}</td>
+      <td>${p.perSheet || 0}</td>
+      <td>${p.soldQty || 0}</td>
+      <td>${cleanNum(p.sheetValue).toFixed(2)}</td>
+      <td>${printValue(p.sheetValue).toFixed(2)}</td>
+      <td>${cleanNum(p.salePrice).toFixed(2)}</td>
+      <td>${subtotalOf(p).toFixed(2)}</td>
+    </tr>`;
+  });
+  const totalSub = products.reduce((s, p) => s + subtotalOf(p), 0);
+  const net = totalSub - cleanNum(salesExtras.fairCost) - cleanNum(salesExtras.transportCost);
+  html += `<tr><td colspan="7"><b>Total subtotales</b></td><td><b>${totalSub.toFixed(2)}</b></td></tr>`;
+  html += `<tr><td colspan="7">Costo feria/local</td><td>${cleanNum(salesExtras.fairCost).toFixed(2)}</td></tr>`;
+  html += `<tr><td colspan="7">Costo transporte</td><td>${cleanNum(salesExtras.transportCost).toFixed(2)}</td></tr>`;
+  html += `<tr><td colspan="7"><b>Beneficio neto</b></td><td><b>${net.toFixed(2)}</b></td></tr>`;
+  html += `</table><br><br>`;
+
+  // Hoja 4 - Stock restante
+  html += `<table border="1"><caption><b>Stock restante</b></caption>
+    <tr><th>Producto</th><th>Cantidad</th><th>Vendidos</th><th>Restante</th><th>Ganancia unitaria</th><th>Ganancia total</th></tr>`;
+  list.forEach(p => {
+    html += `<tr>
+      <td>${escapeHtml(p.name)}</td>
+      <td>${p.qty}</td>
+      <td>${p.soldQty || 0}</td>
+      <td>${remainingQty(p)}</td>
+      <td>${unitProfit(p).toFixed(2)}</td>
+      <td>${subtotalOf(p).toFixed(2)}</td>
+    </tr>`;
+  });
+  const totalGain = list.reduce((s, p) => s + subtotalOf(p), 0);
+  html += `<tr><td colspan="5"><b>Total de toda la lista</b></td><td><b>${totalGain.toFixed(2)}</b></td></tr>`;
+  html += `</table></body></html>`;
+  return html;
+}
+
+// Guardar pestaña actual como TXT
+$("saveTabTxtBtn").onclick = () => {
+  closeMenus();
+  if(!products.length && !confirm("La lista está vacía. ¿Guardar TXT vacío de todas formas?")) return;
+  const base = currentFileName.replace(/\.[^.]+$/, "");
+  const suggested = `${base}_${getTabLabel()}.txt`;
+  const chosen = prompt("Nombre del archivo TXT:", suggested);
+  if(chosen === null) return;
+  const finalName = (chosen.trim() || suggested).replace(/\.txt$/i, "") + ".txt";
+  const txt = buildTabTxt();
+  const blob = new Blob(["\uFEFF" + txt], {type: "text/plain;charset=utf-8"});
+  downloadBlob(blob, finalName);
+  $("status").textContent = `TXT de pestaña "${getTabLabel()}" guardado como "${finalName}".`;
+};
+
+// Guardar pestaña actual como Excel (.xls)
+$("saveTabXlsBtn").onclick = () => {
+  closeMenus();
+  if(!products.length) return alert("Agregá o abrí productos antes de exportar a Excel.");
+  const base = currentFileName.replace(/\.[^.]+$/, "");
+  const suggested = `${base}_${getTabLabel()}.xls`;
+  const chosen = prompt("Nombre del archivo Excel:", suggested);
+  if(chosen === null) return;
+  const finalName = (chosen.trim() || suggested).replace(/\.xls$/i, "") + ".xls";
+  const html = buildTabExcelHtml();
+  const blob = new Blob(["\uFEFF" + html], {type: "application/vnd.ms-excel;charset=utf-8"});
+  downloadBlob(blob, finalName);
+  $("status").textContent = `Excel de pestaña "${getTabLabel()}" guardado como "${finalName}".`;
+};
+
+// Imprimir / PDF solo la pestaña actual
+$("printTabBtn").onclick = () => {
+  closeMenus();
+  if(!products.length) return alert("Agregá o abrí productos antes de imprimir.");
+  // Marcar solo la pestaña actual para impresión
+  document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("print-only"));
+  $(currentTab).classList.add("print-only");
+  const originalTitle = document.title;
+  const baseName = currentFileName.replace(/\.[^.]+$/, "");
+  document.title = `${baseName} - ${getTabLabel()}`;
+  $("status").textContent = `Imprimiendo pestaña "${getTabLabel()}". Seleccioná "Guardar como PDF" si querés un archivo.`;
+  window.print();
+  setTimeout(() => {
+    document.title = originalTitle;
+    document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("print-only"));
+  }, 500);
+};
+
+// Guardar todo como TXT (comportamiento original)
+$("saveTxtBtn").onclick = () => {
+  closeMenus();
+  if(!products.length && !confirm("La lista está vacía. ¿Guardar TXT vacío de todas formas?")) return;
+  const baseName = currentFileName.replace(/\.[^.]+$/, "");
+  const chosen = prompt("Nombre del archivo TXT:", baseName);
+  if(chosen === null) return;
+  const finalName = (chosen.trim() || "productos").replace(/\.txt$/i, "") + ".txt";
+  currentFileName = finalName;
+
+  const txt = products.map(p => `${p.name}\t${p.qty}${p.date ? `\t${p.date}` : ""}`).join("\r\n");
+  const blob = new Blob(["\uFEFF" + txt], {type: "text/plain;charset=utf-8"});
+  downloadBlob(blob, finalName);
+
+  saveToRecent(finalName, products);
+  $("status").textContent = `TXT guardado como "${finalName}".`;
+};
+
+// Guardar todo como Excel
+$("saveAllXlsBtn").onclick = () => {
+  closeMenus();
+  if(!products.length) return alert("Agregá o abrí productos antes de exportar a Excel.");
+  const base = currentFileName.replace(/\.[^.]+$/, "");
+  const suggested = `${base}_completo.xls`;
+  const chosen = prompt("Nombre del archivo Excel:", suggested);
+  if(chosen === null) return;
+  const finalName = (chosen.trim() || suggested).replace(/\.xls$/i, "") + ".xls";
+  const html = buildAllExcelHtml();
+  const blob = new Blob(["\uFEFF" + html], {type: "application/vnd.ms-excel;charset=utf-8"});
+  downloadBlob(blob, finalName);
+  $("status").textContent = `Excel completo guardado como "${finalName}".`;
+};
+
+// Guardar como PDF (todo) - comportamiento original, pero ahora fuerza todas las pestañas
+$("savePdfBtn").onclick = () => {
+  closeMenus();
+  if(!products.length) return alert("Agregá o abrí productos antes de exportar a PDF.");
+  // Mostrar todas las pestañas al imprimir todo
+  document.querySelectorAll(".tab-content").forEach(c => c.classList.add("print-only"));
+  const originalTitle = document.title;
+  const baseName = currentFileName.replace(/\.[^.]+$/, "");
+  document.title = baseName;
+  saveToRecent(currentFileName, products);
+  $("status").textContent = "Seleccioná 'Guardar como PDF' en la ventana de impresión.";
+  window.print();
+  setTimeout(() => {
+    document.title = originalTitle;
+    document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("print-only"));
+  }, 500);
+};
+
+// Limpiar pantalla
+$("clearBtn").onclick = () => {
+  if(!products.length) return;
+  if(confirm("¿Limpiar la lista actual? (Podrás volver a abrirla desde 'Últimos archivos' si ya fue guardada)")){
+    products = [];
+    currentFileName = "productos.txt";
+    $("search").value = "";
+    render();
+    $("status").textContent = "Lista limpia. Abrí un archivo o agregá productos.";
+  }
+};
+
+$("addBtn").onclick = addProduct;
+$("search").oninput = render;
+$("sort").onchange = render;
+
+// Render inicial vacío
+render();
+</script>
+</body>
+</html>
