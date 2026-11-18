@@ -1,0 +1,90 @@
+yaml
+name: Compilar TORMENTOETERNO
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Descargar archivos
+        uses: actions/checkout@v4
+
+      - name: Instalar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Instalar Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Preparar estructura web y generar icono
+        shell: pwsh
+        run: |
+          mkdir dist
+          Copy-Item index.html dist/index.html
+
+          # Generar icono de rayos entre nubes oscuras en cielo oscuro (512x512)
+          Add-Type -AssemblyName System.Drawing
+          $bmp = New-Object System.Drawing.Bitmap(512, 512)
+          $g = [System.Drawing.Graphics]::FromImage($bmp)
+          $g.SmoothingMode = 'AntiAlias'
+
+          # Fondo cielo oscuro
+          $rect = New-Object System.Drawing.Rectangle(0, 0, 512, 512)
+          $bgBrush = New-Object System.Drawing.Drawing2D.LinearGradientBrush($rect, [System.Drawing.Color]::FromArgb(12, 16, 28), [System.Drawing.Color]::FromArgb(30, 36, 54), 90)
+          $g.FillRectangle($bgBrush, $rect)
+
+          # Rayo brillante
+          $boltBrush = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(255, 215, 40))
+          $boltPoints = @(
+            [System.Drawing.Point]::new(275, 190),
+            [System.Drawing.Point]::new(215, 315),
+            [System.Drawing.Point]::new(265, 315),
+            [System.Drawing.Point]::new(235, 445),
+            [System.Drawing.Point]::new(335, 290),
+            [System.Drawing.Point]::new(280, 290)
+          )
+          $g.FillPolygon($boltBrush, $boltPoints)
+
+          # Nubes oscuras
+          $cloudBrush = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(52, 58, 72))
+          $g.FillEllipse($cloudBrush, 95, 130, 140, 95)
+          $g.FillEllipse($cloudBrush, 180, 95, 175, 125)
+          $g.FillEllipse($cloudBrush, 295, 135, 130, 90)
+          $g.FillEllipse($cloudBrush, 130, 160, 260, 75)
+
+          $bmp.Save("icon.png", [System.Drawing.Imaging.ImageFormat]::Png)
+          $g.Dispose()
+          $bmp.Dispose()
+
+      - name: Configurar y Compilar Tauri
+        shell: pwsh
+        run: |
+          npm init -y
+          npm install @tauri-apps/cli@^1.5.0
+          npx tauri init --ci --app-name "TORMENTOETERNO" --window-title "TORMENTOETERNO" --dist-dir "../dist" --dev-path "../dist" --before-dev-command "" --before-build-command ""
+          
+          # Configurar identificador y permisos de archivo
+          $confPath = "src-tauri/tauri.conf.json"
+          $conf = Get-Content $confPath -Raw | ConvertFrom-Json
+          $conf.tauri.bundle.identifier = "com.tormentoeterno.app"
+          $conf.tauri.windows[0].width = 1200
+          $conf.tauri.windows[0].height = 800
+          $conf | ConvertTo-Json -Depth 10 | Set-Content $confPath
+
+          # Aplicar el icono generado y compilar
+          npx tauri icon icon.png
+          npx tauri build
+
+      - name: Subir ejecutable listo
+        uses: actions/upload-artifact@v4
+        with:
+          name: TORMENTOETERNO-Windows
+          path: |
+            src-tauri/target/release/TORMENTOETERNO.exe
+            src-tauri/target/release/bundle/nsis/*.exe
